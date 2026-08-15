@@ -16,10 +16,10 @@ export type AudioProfile = {
 export type GenInput = {
   prompt: string;
   technique: string;
-  palette?: string;
-  audio?: AudioProfile | null;
-  lyrics?: string | null;
-  showLyrics?: boolean;
+  palette?: string | undefined;
+  audio?: AudioProfile | null | undefined;
+  lyrics?: string | null | undefined;
+  showLyrics?: boolean | undefined;
 };
 
 const SYSTEM = `You are a world-class motion designer and creative coder. You output ONE self-contained HTML document that renders a beautiful, looping animation.
@@ -75,7 +75,7 @@ function buildUserPrompt(input: GenInput) {
 function extractHtml(raw: string) {
   let out = raw.trim();
   const fence = out.match(/```(?:html)?\s*([\s\S]*?)```/i);
-  if (fence) out = fence[1].trim();
+  if (fence?.[1]) out = fence[1].trim();
   const idx = out.toLowerCase().indexOf("<!doctype");
   if (idx > 0) out = out.slice(idx);
   return out;

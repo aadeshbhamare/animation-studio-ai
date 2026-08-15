@@ -27,7 +27,7 @@ function movingAverage(values: number[], window: number) {
     let sum = 0;
     let n = 0;
     for (let j = Math.max(0, i - window); j <= Math.min(values.length - 1, i + window); j++) {
-      sum += values[j];
+      sum += values[j]!;
       n++;
     }
     out.push(sum / n);
@@ -46,7 +46,7 @@ export function analyzeBuffer(buffer: AudioBuffer): AudioProfile {
   const frames: number[] = [];
   for (let i = 0; i + hop < data.length; i += hop) {
     let sum = 0;
-    for (let j = 0; j < hop; j++) sum += data[i + j] * data[i + j];
+    for (let j = 0; j < hop; j++) sum += data[i + j]! * data[i + j]!;
     frames.push(Math.sqrt(sum / hop));
   }
   const framesPerSec = sr / hop;
@@ -59,9 +59,9 @@ export function analyzeBuffer(buffer: AudioBuffer): AudioProfile {
   const beats: number[] = [];
   let lastBeat = -1;
   for (let i = 1; i < norm.length; i++) {
-    const flux = norm[i] - norm[i - 1];
+    const flux = norm[i]! - norm[i - 1]!;
     const t = i / framesPerSec;
-    if (flux > 0.045 && norm[i] > smooth[i] * 1.25 && t - lastBeat > 0.22) {
+    if (flux > 0.045 && norm[i]! > smooth[i]! * 1.25 && t - lastBeat > 0.22) {
       beats.push(Number(t.toFixed(3)));
       lastBeat = t;
     }
@@ -72,7 +72,7 @@ export function analyzeBuffer(buffer: AudioBuffer): AudioProfile {
   if (beats.length > 4) {
     const buckets = new Map<number, number>();
     for (let i = 1; i < beats.length; i++) {
-      let interval = beats[i] - beats[i - 1];
+      const interval = beats[i]! - beats[i - 1]!;
       if (interval <= 0.05) continue;
       let candidate = 60 / interval;
       while (candidate > 180) candidate /= 2;
@@ -109,7 +109,7 @@ export function analyzeBuffer(buffer: AudioBuffer): AudioProfile {
     let s1 = 0;
     let s2 = 0;
     for (let i = start; i < start + winSize; i += step) {
-      s0 = data[i] + coeff * s1 - s2;
+      s0 = data[i]! + coeff * s1 - s2;
       s2 = s1;
       s1 = s0;
     }
@@ -118,13 +118,13 @@ export function analyzeBuffer(buffer: AudioBuffer): AudioProfile {
     else if (f < 2000) mid += mag;
     else treble += mag;
     const note = Math.round(12 * Math.log2(f / 440) + 9) % 12;
-    chroma[(note + 12) % 12] += mag;
+    chroma[(note + 12) % 12] = (chroma[(note + 12) % 12] ?? 0) + mag;
   }
   const total = bass + mid + treble || 1;
   const bands = { bass: bass / total, mid: mid / total, treble: treble / total };
   const keyIndex = chroma.indexOf(Math.max(...chroma));
-  const minorish = chroma[(keyIndex + 3) % 12] > chroma[(keyIndex + 4) % 12];
-  const key = `${NOTES[keyIndex]} ${minorish ? "minor" : "major"}`;
+  const minorish = (chroma[(keyIndex + 3) % 12] ?? 0) > (chroma[(keyIndex + 4) % 12] ?? 0);
+  const key = `${NOTES[keyIndex]!} ${minorish ? "minor" : "major"}`;
 
   const energyCurve = Array.from({ length: 64 }, (_, i) => {
     const from = Math.floor((i / 64) * norm.length);
@@ -168,13 +168,13 @@ export function alignLyrics(text: string, profile: AudioProfile) {
 
   const anchors =
     profile.beats.length > groups.length
-      ? groups.map((_, i) => profile.beats[Math.floor((i / groups.length) * profile.beats.length)])
+      ? groups.map((_, i) => profile.beats[Math.floor((i / groups.length) * profile.beats.length)]!)
       : groups.map((_, i) => ((i + 0.5) / groups.length) * profile.duration);
 
   return groups.map((g, i) => ({
     text: g,
-    time: anchors[i],
-    end: i + 1 < anchors.length ? anchors[i + 1] : profile.duration,
+    time: anchors[i]!,
+    end: i + 1 < anchors.length ? anchors[i + 1]! : profile.duration,
   }));
 }
 
