@@ -163,18 +163,41 @@ export function alignLyrics(text: string, profile: AudioProfile) {
   const words = text.split(/\s+/).filter(Boolean);
   if (!words.length) return [] as { time: number; end: number; text: string }[];
 
-  const groups: string[] = [];
-  for (let i = 0; i < words.length; i += 3) groups.push(words.slice(i, i + 3).join(" "));
+  const lines: string[] = [];
+  let current: string[] = [];
+  for (const w of words) {
+    current.push(w);
+    if (current.length >= 4) {
+      lines.push(current.join(" "));
+      current = [];
+    }
+  }
+  if (current.length) lines.push(current.join(" "));
 
+  const beatCount = profile.beats.length;
   const anchors =
-    profile.beats.length > groups.length
-      ? groups.map((_, i) => profile.beats[Math.floor((i / groups.length) * profile.beats.length)]!)
-      : groups.map((_, i) => ((i + 0.5) / groups.length) * profile.duration);
+    beatCount > lines.length
+      ? lines.map((_, i) => profile.beats[Math.floor((i / lines.length) * beatCount)]!)
+      : lines.map((_, i) => ((i + 0.5) / lines.length) * profile.duration);
 
-  return groups.map((g, i) => ({
+  return lines.map((g, i) => ({
     text: g,
     time: anchors[i]!,
     end: i + 1 < anchors.length ? anchors[i + 1]! : profile.duration,
+  }));
+}
+
+/** Word-level alignment: distribute individual words evenly across the track duration. */
+export function alignWordsLocal(text: string, profile: AudioProfile) {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const perWord = profile.duration / words.length;
+  return words.map((w, i) => ({
+    word: w,
+    start: Number((i * perWord).toFixed(3)),
+    end: Number(((i + 1) * perWord).toFixed(3)),
+    line: Math.floor(i / 4),
+    confidence: 0.7,
   }));
 }
 
