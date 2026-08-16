@@ -9,6 +9,7 @@ import { GenerationProgress, type PipelineStep } from "@/components/GenerationPr
 import { ImageUploader } from "@/components/ImageUploader";
 import { QualityReportCard } from "@/components/QualityReportCard";
 import { StoryboardPreview } from "@/components/StoryboardPreview";
+import { VersionHistory } from "@/components/VersionHistory";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,6 +54,7 @@ import {
 } from "@/lib/animation-types";
 import { fileToImageAsset } from "@/lib/image-utils";
 import type { ImageAsset, QualityReport, StoryboardScene, VisualDNA, WordCue } from "@/lib/project-types";
+import type { AnimationVersionRow } from "@/lib/supabase-client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -267,6 +269,14 @@ function Studio() {
       description: "Re-running the AI director for this scene…",
     });
     void run(true);
+  };
+
+  const restoreVersion = (v: AnimationVersionRow) => {
+    setHtml(v.html);
+    setPrompt(v.prompt);
+    setSelectedStyles(v.styles ?? []);
+    setQualityReport(null);
+    toast.success("Version restored", { description: v.label });
   };
 
   const downloadFile = (content: string, filename: string, mime: string) => {
@@ -766,6 +776,14 @@ function Studio() {
             <QualityReportCard report={qualityReport} />
 
             <ExportPanel html={html} onDownload={handleExport} />
+
+            <VersionHistory
+              currentHtml={html}
+              currentPrompt={prompt}
+              currentStyles={selectedStyles}
+              currentSceneCount={scenes.length}
+              onRestore={restoreVersion}
+            />
 
             <Button className="ember-fill" size="lg" onClick={() => run()} disabled={loading}>
               <Wand2 />
