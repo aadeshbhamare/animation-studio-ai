@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { AudioLines, Music4, Sparkles, Upload, Wand as Wand2, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -75,13 +74,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Studio() {
-  const generate = useServerFn(generateAnimation);
-  const transcribe = useServerFn(transcribeAudio);
-  const analyzeImg = useServerFn(analyzeImage);
-  const storyboard = useServerFn(createStoryboard);
-  const visualDna = useServerFn(getVisualDNA);
-  const quality = useServerFn(qualityCheck);
-  const alignWordsFn = useServerFn(alignWords);
+
 
   const [prompt, setPrompt] = useState("");
   const [technique, setTechnique] = useState("particle-system");
@@ -164,14 +157,14 @@ function Studio() {
       setProfile(result);
       setAnalyzing("Listening for vocals and lyrics…");
       const base64 = await fileToBase64(picked);
-      const { text } = await transcribe({
+      const { text } = await transcribeAudio({
         data: { base64, mimeType: picked.type || "audio/mpeg", fileName: picked.name },
       });
       if (text) {
         setLyrics(text);
         setAnalyzing("Aligning words to the beat…");
         try {
-          const { cues: aligned } = await alignWordsFn({
+          const { cues: aligned } = await alignWords({
             data: { text, duration: result.duration, beats: result.beats },
           });
           if (aligned.length > 0) setWordCues(aligned);
@@ -221,7 +214,7 @@ function Studio() {
       try {
         const base64 = asset.dataUrl.split(",")[1] ?? "";
         const mimeType = asset.dataUrl.slice(asset.dataUrl.indexOf(":") + 1, asset.dataUrl.indexOf(";"));
-        const { analysis } = await analyzeImg({
+        const { analysis } = await analyzeImage({
           data: { base64, mimeType, fileName: asset.name },
         });
         setImages((prev) =>
@@ -335,7 +328,7 @@ function Studio() {
         stepIdx = steps.findIndex((s) => s.label === "Creating Visual DNA");
         updatePipeline(stepIdx, "active");
         try {
-          const { dna: d } = await visualDna({ data: { images } });
+          const { dna: d } = await getVisualDNA({ data: { images } });
           setDna(d);
         } catch {
           /* optional */
@@ -346,7 +339,7 @@ function Studio() {
       stepIdx = steps.findIndex((s) => s.label === "Creating storyboard");
       updatePipeline(stepIdx, "active");
       try {
-        const { scenes: sb } = await storyboard({
+        const { scenes: sb } = await createStoryboard({
           data: {
             prompt: brief,
             styles: selectedStyles,
@@ -365,7 +358,7 @@ function Studio() {
 
       stepIdx = steps.findIndex((s) => s.label === "Generating animation");
       updatePipeline(stepIdx, "active");
-      const { html: result } = await generate({
+      const { html: result } = await generateAnimation({
         data: {
           prompt: brief,
           technique: techniqueLabel,
@@ -394,7 +387,7 @@ function Studio() {
       stepIdx = steps.findIndex((s) => s.label === "Quality check");
       updatePipeline(stepIdx, "active");
       try {
-        const { report } = await quality({
+        const { report } = await qualityCheck({
           data: {
             hasLyrics: !!lyrics.trim(),
             hasAudio: !!profile,
